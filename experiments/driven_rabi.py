@@ -109,27 +109,57 @@ print(f"Saved: {save_path}")
 # ── 6. BONUS: Bloch sphere trajectory ────────────────────────────────────────
 # Re-solve and capture the state at each time (states=True). This traces the
 # Bloch sphere trajectory of the precession.
+#
+# Plain matplotlib 3D is used here instead of qt.Bloch because qt.Bloch's
+# renderer produces an empty figure on some matplotlib + Windows setups.
 result_states = qt.sesolve(H, psi0, times)
 trajectory = result_states.states
 
 # Compute Bloch vector at every step
-sx_traj = [qt.expect(qt.sigmax(), s) for s in trajectory]
-sy_traj = [qt.expect(qt.sigmay(), s) for s in trajectory]
-sz_traj = [qt.expect(qt.sigmaz(), s) for s in trajectory]
+sx_traj = np.array([qt.expect(qt.sigmax(), s) for s in trajectory])
+sy_traj = np.array([qt.expect(qt.sigmay(), s) for s in trajectory])
+sz_traj = np.array([qt.expect(qt.sigmaz(), s) for s in trajectory])
 
 fig = plt.figure(figsize=(7, 7))
 ax = fig.add_subplot(111, projection="3d")
-b = qt.Bloch(axes=ax)
-b.add_points([sx_traj, sy_traj, sz_traj], meth="l")  # 'l' = line
-b.add_states(psi0)                                    # mark the start
-b.frame_alpha = 0.15
-b.point_color = ["crimson"]
-b.vector_color = ["darkblue"]
-b.render()
+
+# Bloch sphere wireframe (translucent)
+u, v = np.mgrid[0:2 * np.pi:30j, 0:np.pi:20j]
+sphere_x = np.cos(u) * np.sin(v)
+sphere_y = np.sin(u) * np.sin(v)
+sphere_z = np.cos(v)
+ax.plot_wireframe(sphere_x, sphere_y, sphere_z,
+                  color="gray", alpha=0.18, linewidth=0.4)
+
+# Cardinal axes through the sphere
+ax.plot([-1, 1], [0, 0], [0, 0], color="black", linewidth=0.6, alpha=0.4)
+ax.plot([0, 0], [-1, 1], [0, 0], color="black", linewidth=0.6, alpha=0.4)
+ax.plot([0, 0], [0, 0], [-1, 1], color="black", linewidth=0.6, alpha=0.4)
+
+# Pole / equator labels
+ax.text(0,    0,    1.18, r"$|0\rangle$",   fontsize=11, ha="center")
+ax.text(0,    0,   -1.22, r"$|1\rangle$",   fontsize=11, ha="center")
+ax.text(1.20, 0,    0,    r"$|+\rangle$",   fontsize=11)
+ax.text(0,    1.20, 0,    r"$|+i\rangle$",  fontsize=11)
+
+# Trajectory line
+ax.plot(sx_traj, sy_traj, sz_traj, color="crimson", linewidth=1.8,
+        label="trajectory")
+
+# Starting state marker (|0>, at the north pole)
+ax.scatter([sx_traj[0]], [sy_traj[0]], [sz_traj[0]],
+           color="darkblue", s=60, zorder=10, label="start")
+
+ax.set_xlim(-1.3, 1.3)
+ax.set_ylim(-1.3, 1.3)
+ax.set_zlim(-1.3, 1.3)
+ax.set_box_aspect((1, 1, 1))
+ax.set_axis_off()
 ax.set_title(f"Bloch trajectory under X drive  ({T_MAX:.0f} periods)",
              fontsize=12, pad=10)
+ax.legend(loc="upper left", fontsize=10, framealpha=0.85)
 
 save_path_bloch = OUTPUT_DIR / "driven_rabi_bloch_trajectory.png"
-plt.savefig(save_path_bloch, dpi=150, bbox_inches="tight")
+plt.savefig(save_path_bloch, dpi=150)
 plt.show()
 print(f"Saved: {save_path_bloch}")
