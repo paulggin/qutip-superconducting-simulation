@@ -1,20 +1,3 @@
-"""
-setup_verification.py
-Verify QuTiP is installed and working. Render a Bloch sphere with three
-canonical single-qubit states. Save to plots/.
-
-Expected output when this runs:
-- A printed QuTiP version banner.
-- A 1x3 grid of Bloch spheres in plots/bloch_sphere_verification.png:
-    left:  ground state |0> at the north pole
-    mid:   excited state |1> at the south pole
-    right: equator state |+> = (|0> + |1>) / sqrt(2) on the +x axis
-- A printed inner-product check: <0|0>, <0|1>, <+|+> should equal 1, 0, 1.
-
-If all three checks pass, QuTiP is wired up correctly. Next script:
-driven_rabi.py.
-"""
-
 import sys
 from pathlib import Path
 
@@ -33,8 +16,6 @@ print(f"Python version: {sys.version.split()[0]}")
 print("="*60)
 
 # ── 2. Build the three canonical states ──────────────────────────────────────
-# qt.basis(N, k) returns the kth basis state in an N-dimensional Hilbert space.
-# For a single qubit, N=2 and k in {0, 1}.
 ket_0 = qt.basis(2, 0)                     # |0>, ground state
 ket_1 = qt.basis(2, 1)                     # |1>, excited state
 ket_plus = (ket_0 + ket_1).unit()          # |+> = (|0> + |1>) / sqrt(2)
@@ -47,8 +28,6 @@ print("|+> =")
 print(ket_plus)
 
 # ── 3. Inner-product sanity checks ───────────────────────────────────────────
-# QuTiP 5.x: a.dag() * b between two kets returns a complex scalar directly.
-# The .overlap() method is the canonical, version-stable way to compute <a|b>.
 def inner(a, b):
     return a.overlap(b)
 
@@ -58,8 +37,6 @@ print(f"<0|1> = {inner(ket_0, ket_1):.4f}  (expect 0+0j)")
 print(f"<+|+> = {inner(ket_plus, ket_plus):.4f}  (expect 1+0j)")
 
 # ── 4. Verify Pauli operator expectation values ──────────────────────────────
-# <sigma_z> indicates where the state sits on the z-axis of the Bloch sphere.
-# +1 means north pole (|0>), -1 means south pole (|1>), 0 means equator.
 sx, sy, sz = qt.sigmax(), qt.sigmay(), qt.sigmaz()
 
 def bloch_vector(psi):
