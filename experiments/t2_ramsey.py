@@ -1,29 +1,3 @@
-"""
-t2_ramsey.py
-T2 Ramsey simulation with T1 amplitude damping + pure dephasing T_phi,
-anchored to real ibm_marrakesh Q0 Ramsey data.
-
-The physics:
-    1/T2 = 1/(2*T1) + 1/T_phi
-
-    Two collapse operators on the 2-level system:
-        L_1   = sqrt(1/T1)        * sigma_minus  (amplitude damping)
-        L_phi = sqrt(1/(2*T_phi)) * sigma_z      (pure dephasing)
-
-    Initial state: |+> = (|0> + |1>) / sqrt(2)
-    Detuning Hamiltonian: H = pi * delta_f * sigma_z (rad/us, gives visible
-    oscillations at frequency delta_f in MHz).
-
-The point of this script:
-    Use the offset-corrected T1 = 319.7 us from t1_lindblad.py and the
-    measured T2 = 46.1 us from the real Q0 anchor to derive T_phi, then
-    reproduce the Ramsey envelope with both collapse operators. Confirms
-    that Q0 sits in the dephasing-dominated regime (T_phi ~ 50 us).
-
-Outputs:
-    plots/t2_ramsey_simulator_vs_real.png
-"""
-
 import json
 from pathlib import Path
 
@@ -65,21 +39,13 @@ c_ops = [
     np.sqrt(gamma_1)   * qt.destroy(2),   # amplitude damping (same form as t1_lindblad.py)
     np.sqrt(gamma_phi) * qt.sigmaz(),     # pure dephasing
 ]
-# Ramsey starts in |+>
 psi0_ramsey = (qt.basis(2,0) + qt.basis(2,1)).unit()
 
-# Observable: <sigma_x> (coherence, not population)
 e_ops = [qt.sigmax()]
 delta_f_MHz = meta["T2_oscillation_freq_mhz"]   # 0.05186 MHz
 H_ramsey = (np.pi * delta_f_MHz) * qt.sigmaz()  # units: rad/µs
 
-# Time grid: real T2 data only spans 0-100 us
 times = np.linspace(0, 100, 500)
 
-# Solve
 res = qt.mesolve(H_ramsey, psi0_ramsey, times, c_ops=c_ops, e_ops=e_ops)
 sx  = res.expect[0]   # <sigma_x>(t)
-
-# Convert <sigma_x> to P(|1>) after the final pi/2 pulse:
-#   the conventional Ramsey readout maps <sigma_x> = +1 to P(|1>) = 0,
-#   
