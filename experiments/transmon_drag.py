@@ -1,52 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-transmon_drag.py
-Three-level transmon (|0>, |1>, |2>) under a square Gaussian X gate vs. the
-same gate with a DRAG correction. Demonstrates that DRAG suppresses leakage
-into the |2> state, and that the suppression survives the addition of T1 and
-T_phi collapse operators anchored to ibm_marrakesh Q0.
-
-The physics:
-    Rotating frame at omega_01. The free Hamiltonian is
-        H_0 = alpha * |2><2|
-    where alpha < 0 is the transmon anharmonicity. In this frame |0> and |1>
-    sit at zero energy and |2> is detuned by alpha = -2*pi*0.3 GHz.
-
-    Drive (after the rotating-wave approximation):
-        H_d(t) = (Omega_x(t)/2)(a + a^dag) + (Omega_y(t)/2) i(a^dag - a)
-    The I quadrature Omega_x(t) is a Gaussian envelope calibrated so that the
-    integral of Omega_x equals pi (a pi rotation on the qubit subspace).
-
-    A bare Gaussian (Omega_y = 0) has finite bandwidth and partially drives
-    the |1>-|2> transition, producing leakage. DRAG adds a Q-quadrature term
-        Omega_y(t) = dOmega_x/dt / alpha
-    that destructively interferes with the leakage pathway to first order.
-
-    Collapse operators on the 3-level space:
-        L_1    = sqrt(1/T1) * a                  (amplitude damping)
-        L_phi  = sqrt(2/T_phi) * a^dag a         (pure dephasing, n_op)
-    The factor of 2 in L_phi makes the qubit-subspace dephasing rate equal
-    to 1/T_phi, matching the 2-level convention used in t2_ramsey.py.
-
-The point of this script:
-    (a) Show that a fast Gaussian pulse on a 3-level transmon both leaves a
-        residual P(|0>) ~3-4% (a qubit-subspace calibration error from the
-        |2> level shifting the effective Rabi frequency) and produces a
-        ~0.08% steady-state leakage into |2>. DRAG mostly fixes the
-        calibration error (P(|1>) climbs from ~0.96 to ~0.999) and reduces
-        end-of-pulse leakage by ~3x. The transient |2> population during
-        the pulse peaks at ~9% in both cases; what DRAG suppresses is the
-        residual that survives to the end of the pulse, which is what
-        actually matters for gate fidelity.
-    (b) Add T1 + T_phi (Q0 values) and show that the leakage story is
-        unchanged at this gate length: the gate is much shorter than T1
-        and T_phi, so coherent control errors dominate over decoherence.
-
-Outputs:
-    plots/transmon_drag_comparison.png      (unitary, two panels)
-    plots/transmon_drag_open_system.png     (T1 + T_phi, two panels)
-"""
-
 import json
 from pathlib import Path
 
@@ -65,19 +16,13 @@ TG    = 6.0                       # total gate time, ns
 SIGMA = 1.5                       # Gaussian sigma, ns (truncated at +/-2 sigma)
 NT    = 601                       # time samples on [0, TG]
 times = np.linspace(0, TG, NT)
-# Note on pulse choice: |alpha|*sigma ~ 1 puts the pulse in the regime where
-# the Gaussian's spectral content at the |1>-|2> frequency is large enough to
-# cause visible leakage. Slower pulses (sigma >> 1/|alpha|) already leak
-# negligibly, so DRAG has nothing to correct in that regime.
 
-# T1 and T_phi from ibm_marrakesh Q0 (matches t2.py convention)
 with open(DATA_DIR / "ibm_marrakesh_q0_metadata.json") as f:
     meta = json.load(f)
 T1_us    = 319.70                          # offset-corrected fit from t1.py
 T2_us    = meta["T2_fit_us"]               # 46.1 us
 Tphi_us  = 1.0 / (1.0 / T2_us - 1.0 / (2.0 * T1_us))   # ~ 50 us
 
-# Convert from microseconds to nanoseconds for use on the ns time grid
 T1_ns   = T1_us   * 1e3
 Tphi_ns = Tphi_us * 1e3
 
@@ -128,11 +73,6 @@ def domega_x_dt(t, args=None):
     return -AMP * ((t - T0) / (s * s)) * gauss(t)
 
 def omega_y_drag(t, args=None):
-    # First-order DRAG (Motzoi et al. PRL 2009, Eq. 8):
-    #     Omega_y(t) = -dOmega_x/dt / (2 * Delta_12),  Delta_12 = alpha for transmon
-    # The factor of 1/2 (not 1/alpha as a naive derivation suggests) is the
-    # actual leading-order cancellation coefficient and matches the numerical
-    # leakage minimum from a beta sweep.
     return -domega_x_dt(t) / (2.0 * ALPHA)
 
 def omega_y_zero(t, args=None):
