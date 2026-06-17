@@ -17,7 +17,7 @@ This project constructs a Hamiltonian simulation of a superconducting transmon q
 4. Add pure dephasing T_phi to recover the T2 Ramsey envelope from the same Q0 data.
 5. Move to a 3-level Hilbert space, apply a Gaussian X gate, and use first-order DRAG to suppress leakage to the |2> state. Repeat the comparison with T1 and T_phi collapse operators turned on.
 
-The deliverable is a methodology that links transmon physics (rotating-frame Hamiltonians, Lindblad collapse operators, and DRAG pulse shaping) to real experimental data measured on IBM Quantum hardware.
+The deliverable is a framework that links transmon physics (rotating-frame Hamiltonians, Lindblad collapse operators, and DRAG pulse shaping) to real experimental data measured on IBM Quantum hardware.
 
 ---
 
@@ -30,7 +30,7 @@ Coherence times determine computational usability. **T1** is energy relaxation: 
 QuTiP simulates this with two solvers:
 
 - `qt.sesolve` integrates the Schrodinger equation for unitary dynamics.
-- `qt.mesolve` integrates the Lindblad master equation with one collapse operator per dissipation channel.
+- `qt.mesolve` integrates the Lindblad master equation with one collapse operator per dissipation mechanism.
 
 ---
 
@@ -98,7 +98,7 @@ The Bloch trajectory traces the expected circular path in the y-z plane: an X ro
 | RMS residual (T1 = 315.06 us) | 0.0196 |
 | RMS residual (T1 = 344.48 us) | 0.0185 |
 
-The Lindblad solver and the exponential curve fitter are consistent to four decimals: feeding T1 = 315.0639 us into the master equation and refitting the resulting curve returns T1 = 315.0636 us. On the real data, the published T1 = 344.48 us gives a marginally lower RMS residual than the measured T1 = 315.06 us, but neither curve sits cleanly on the data because both ignore the readout-floor offset. Refitting the real data to `A exp(-t / T1) + C` recovers an unbiased T1 = 319.70 us with C = 0.024, and the simulated curve at this T1 lands on the data points within experimental noise.
+The Lindblad solver and the exponential curve fitter are consistent to four decimals: substitutting T1 = 315.0639 us into the master equation and refitting the resulting curve returns T1 = 315.0636 us. On the real data, the published T1 = 344.48 us gives a marginally lower RMS residual than the measured T1 = 315.06 us, but neither curve sits cleanly on the data because both ignore the readout-floor offset. Refitting the real data to `A exp(-t / T1) + C` recovers an unbiased T1 = 319.70 us with C = 0.024, and the simulated curve at this T1 lands on the data points within experimental noise.
 
 ![T1 Lindblad simulation vs real ibm_marrakesh Q0](plots/t1_lindblad_simulator_vs_real.png)
 
@@ -120,14 +120,14 @@ Q0 sits in the dephasing-dominated regime: T2 is roughly 7% of the amplitude-dam
 
 Final populations after a 6 ns Gaussian X gate (sigma = 1.5 ns, alpha / 2pi = -0.3 GHz):
 
-| Pulse | P(|0>) | P(|1>) | P(|2>) leakage |
-| :-- | --: | --: | --: |
-| Square Gaussian (unitary) | 0.0379 | 0.9613 | 8.5 x 10^-4 |
-| DRAG-corrected (unitary) | 0.0006 | 0.9991 | 2.7 x 10^-4 |
-| Square Gaussian (T1 + T_phi) | 0.0379 | 0.9613 | 8.5 x 10^-4 |
-| DRAG-corrected (T1 + T_phi) | 0.0006 | 0.9991 | 2.7 x 10^-4 |
+| Pulse | P(\|0⟩) | P(\|1⟩) | P(\|2⟩) Leakage |
+|:---|---:|---:|---:|
+| Square Gaussian (unitary) | 0.0379 | 0.9613 | 8.5 × 10⁻⁴ |
+| DRAG-corrected (unitary) | 0.0006 | 0.9991 | 2.7 × 10⁻⁴ |
+| Square Gaussian (T₁ + T_φ) | 0.0379 | 0.9613 | 8.5 × 10⁻⁴ |
+| DRAG-corrected (T₁ + T_φ) | 0.0006 | 0.9991 | 2.7 × 10⁻⁴ |
 
-DRAG removes about 99% of the qubit-subspace calibration error (P(|1>) increases from 0.961 to 0.999) and cuts end-of-pulse leakage by roughly 3x. The transient |2> population during the pulse peaks near 9% in both cases. The residual at the end of the pulse is what affects gate fidelity, and that is the quantity DRAG suppresses.
+DRAG removes about 99% of the qubit-subspace calibration error (P(|1>) increases from 0.961 to 0.999) and cuts end-of-pulse leakage by roughly 3x. The transient |2> population during the pulse peaks near 9% in both cases. The residual at the end of the pulse is what affects gate fidelity, and the quantity DRAG suppresses.
 
 ![Transmon DRAG comparison, unitary](plots/transmon_drag_comparison.png)
 
@@ -142,21 +142,13 @@ Adding T1 and T_phi collapse operators on the 3-level space (with the Q0 anchor 
 
 ## Discussion
 
-**The offset-corrected T1 fit reconciles simulation and data.** A comparison of the simulated Lindblad curve at T1 = 315.06 us against the real Q0 data gives an RMS residual of 0.0196, slightly worse than the published T1 = 344.48 us (0.0185). Neither value is wrong: the issue is that the real measurement has a readout assignment-error floor near P(|1>) ~ 0.024 that the bare Lindblad model does not include. Refitting the real data with an additive offset C recovers T1 = 319.70 us, and at that T1 the simulation matches the data within experimental noise. The same offset-corrected T1 is then used as the input to the Ramsey and DRAG simulations, completing the connection between the IBM Quantum project and this project.
+**The offset-corrected T1 fit reconciles simulation and data.** A comparison of the simulated Lindblad curve at T1 = 315.06 us against the real Q0 data gives an RMS residual of 0.0196, slightly worse than the published T1 = 344.48 us (0.0185). The issue is that the real measurement has a readout assignment-error floor near P(|1>) ~ 0.024 that the bare Lindblad model does not include. Refitting the real data with an additive offset C recovers T1 = 319.70 us, and at that T1 the simulation matches the data within experimental noise. The same offset-corrected T1 is then used as the input to the Ramsey and DRAG simulations.
 
-**Q0 is dephasing-limited, the simulation confirms.** The relation `1/T2 = 1/(2 T1) + 1/T_phi` gives T_phi = 49.65 us for Q0, which is roughly 13x shorter than the amplitude-damping contribution to T2. Pure dephasing therefore accounts for ~93% of Q0's decoherence rate. The QuTiP simulation with both collapse operators reproduces the measured Ramsey envelope on the same Q0 data, which independently confirms that Q0's T2 budget is set by phase-randomizing noise. This is the simulation-side validation of the regime classification from the IBM Quantum project's real-hardware anchor.
+**The simulation confirms Q0 is dephasing-limited.** The relation `1/T2 = 1/(2 T1) + 1/T_phi` gives T_phi = 49.65 us for Q0, which is roughly 13x shorter than the amplitude-damping contribution to T2. Pure dephasing therefore accounts for ~93% of Q0's decoherence rate. The QuTiP simulation with both collapse operators reproduces the measured Ramsey envelope on the same Q0 data, which independently confirms that Q0's T2 budget is dominated by phase-randomizing noise.
 
-**DRAG's main contribution is calibration error, not leakage.** The 6 ns Gaussian pulse on this 3-level transmon produces a transient peak |2> population near 9%, but most of that returns to the qubit subspace by the end of the pulse. What remains at the end is two effects: a residual leakage of ~8.5 x 10^-4 to |2>, and a 3.8% qubit-subspace calibration error where the |2> level effectively shifts the qubit Rabi frequency. DRAG corrects both, but the calibration error (P(|1>) goes from 0.961 to 0.999) matters more for gate fidelity than the leakage reduction (8.5 x 10^-4 to 2.7 x 10^-4). The 1/(2 alpha) coefficient in `Omega_y(t) = -dOmega_x/dt / (2 alpha)` is the actual leading-order cancellation factor: a numerical beta sweep around it produces a clean minimum.
+**DRAG's main contribution is calibration error, not leakage.** The 6 ns Gaussian pulse on this 3-level transmon produces a transient peak |2> population near 9%, but most of that returns to the qubit subspace by the end of the pulse. What remains at the end is two effects: a residual leakage of ~8.5 x 10^-4 to |2>, and a 3.8% qubit-subspace calibration error where the |2> level shifts the qubit Rabi frequency. DRAG corrects both, but the calibration error (P(|1>) goes from 0.961 to 0.999) matters more for gate fidelity than the leakage reduction (8.5 x 10^-4 to 2.7 x 10^-4). The 1/(2 alpha) coefficient in `Omega_y(t) = -dOmega_x/dt / (2 alpha)` is the actual leading-order cancellation factor: a numerical beta sweep around it produces a clean minimum.
 
 **Decoherence is negligible at this gate length.** The Q0 T1 = 319.70 us and T_phi = 49.65 us are five orders of magnitude longer than the 6 ns gate. The open-system simulation produces final populations indistinguishable from the unitary case to four decimal places. This is the regime real superconducting hardware operates in: single-qubit gates are short enough that coherent control errors (calibration, leakage, crosstalk) dominate over decoherence. T1 and T_phi set the depth budget for the whole circuit, not the fidelity of individual gates.
-
----
-
-## Relevance to Quantum Hardware
-
-This project covers the simulation side of the workflow used in superconducting qubit calibration: build a Hamiltonian model in the rotating frame, add collapse operators for amplitude damping and pure dephasing, calibrate pulse envelopes to a target rotation, and validate against measured coherence data. The DRAG implementation is the same first-order leakage correction used in IBM's and Google's single-qubit gates on transmon devices. Working through it in QuTiP at this level builds the intuition needed to read calibration code, debug pulse-shaping issues, and reason about the trade-offs between gate speed, leakage, and decoherence.
-
-The companion IBM Quantum project provides the measurements; this project provides the model. Together they form the simulator-and-hardware pair used to develop new gates: tune the model until it reproduces the measurement, then use the model to predict how proposed pulse changes will perform before committing real-device time to them.
 
 ---
 
