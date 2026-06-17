@@ -1,30 +1,3 @@
-"""
-driven_rabi.py
-Driven single-qubit Rabi oscillation, no decoherence.
-
-The physics:
-    Hamiltonian: H = (Omega_R / 2) * sigma_x
-    Initial state: |0>
-    Schrodinger equation:  i hbar d|psi>/dt = H |psi>
-
-A qubit driven on resonance by a constant-amplitude X-axis drive oscillates
-between |0> and |1> at angular frequency Omega_R (the Rabi frequency).
-P(|1>) = sin^2(Omega_R * t / 2).
-
-This is the QuTiP "hello world" of qubit dynamics. Once a clean Rabi
-oscillation is reproduced, additional physics layers cleanly on top:
-    - decoherence (collapse operators): t1_lindblad.py and t2_ramsey.py
-    - a multi-level transmon Hilbert space: transmon_drag.py
-    - DRAG pulse shaping: transmon_drag.py
-
-Expected output when this runs:
-    - A clean sinusoidal oscillation between P(|1>) = 0 and 1
-    - A fit that recovers the input Rabi frequency to within numerical precision
-    - Plot saved as plots/driven_rabi.png
-
-Sanity check: the fitted frequency should match OMEGA_R / (2 * pi).
-"""
-
 from pathlib import Path
 
 import numpy as np
@@ -36,9 +9,6 @@ OUTPUT_DIR = Path(__file__).resolve().parent.parent / "plots"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── 1. PARAMETERS ────────────────────────────────────────────────────────────
-# Angular Rabi frequency. 2*pi*1 = 6.283 rad/unit-time gives an oscillation
-# period of exactly 1 in these time units. With real units (e.g. MHz),
-# time would be in microseconds.
 OMEGA_R = 2 * np.pi * 1.0                  # rad / unit-time
 T_MAX   = 5.0                              # 5 full periods
 NPTS    = 500
@@ -46,26 +16,17 @@ NPTS    = 500
 times = np.linspace(0, T_MAX, NPTS)
 
 # ── 2. HAMILTONIAN AND INITIAL STATE ─────────────────────────────────────────
-# H = (Omega_R / 2) * sigma_x
-# The factor of 1/2 is the standard convention so that the rotation angle
-# around the x-axis after time t equals Omega_R * t (not 2 * Omega_R * t).
 H = 0.5 * OMEGA_R * qt.sigmax()
 
 # Start in |0>, the ground state
 psi0 = qt.basis(2, 0)
 
 # ── 3. SOLVE THE SCHRODINGER EQUATION ────────────────────────────────────────
-# sesolve returns expectation values of any operators passed via e_ops.
-# <sigma_z> gives P(|0>) - P(|1>), so:
-#     P(|1>) = (1 - <sigma_z>) / 2
 result = qt.sesolve(H, psi0, times, e_ops=[qt.sigmaz()])
 sz_expect = result.expect[0]
 p1 = (1 - sz_expect) / 2
 
 # ── 4. FIT TO sin^2(omega * t / 2) ───────────────────────────────────────────
-# Equivalent form: (1 - cos(omega * t)) / 2.
-# Fit form: P(|1>) = A * (1 - cos(omega * t + phi)) / 2 + C
-# A near 1, phi near 0, C near 0 if the run is clean.
 def rabi(t, A, omega, phi, C):
     return A * (1 - np.cos(omega * t + phi)) / 2 + C
 
@@ -106,13 +67,7 @@ plt.savefig(save_path, dpi=150)
 plt.show()
 print(f"Saved: {save_path}")
 
-# ── 6. BONUS: Bloch sphere trajectory ────────────────────────────────────────
-# Re-solve and capture the state at each time (states=True). This traces the
-# Bloch sphere trajectory of the precession.
-#
-# Plain matplotlib 3D is used here instead of qt.Bloch because qt.Bloch's
-# renderer produces an empty figure on some matplotlib + Windows setups.
-result_states = qt.sesolve(H, psi0, times)
+# ── 6. Bloch sphere trajectory ────────────────────────────────────────
 trajectory = result_states.states
 
 # Compute Bloch vector at every step
