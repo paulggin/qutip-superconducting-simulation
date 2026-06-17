@@ -1,35 +1,3 @@
-"""
-t1_lindblad.py
-T1 amplitude-damping in the Lindblad master equation, anchored to real
-ibm_marrakesh Q0 data from the IBM Quantum project.
-
-The physics:
-    Lindblad master equation:
-        d rho / dt = -i [H, rho] + L_1 rho L_1^dag - (1/2) {L_1^dag L_1, rho}
-
-    Hamiltonian: H = 0  (no drive: pure free evolution)
-    Collapse operator: L_1 = sqrt(1/T1) * sigma_minus
-        where sigma_minus = (sigma_x - i*sigma_y) / 2 = qt.destroy(2)
-    Initial state: |1>  (excited, mirroring the real experiment)
-
-    Result: P(|1>)(t) = exp(-t / T1)  (pure exponential decay)
-
-The point of this script:
-    Load the real Q0 T1 data from the ibm_marrakesh anchor run, feed Q0's
-    *measured* T1 = 315.1 us as the Lindblad collapse rate, and check whether
-    the simulated curve sits on top of the data points. If it does, the loop
-    is closed: same T1 number, derived from the device by experiment,
-    reproduced from the Hamiltonian by simulation.
-
-    A second simulation uses the *published* (calibration-book) T1 = 344.5 us
-    to show that the published value does NOT match the data as well. This is
-    direct visual evidence that qubit coherence drifts between IBM's
-    calibration runs.
-
-Outputs:
-    plots/t1_lindblad_simulator_vs_real.png
-"""
-
 import json
 from pathlib import Path
 
@@ -58,9 +26,6 @@ print(f"Published / measured ratio = {T1_PUBLISHED / T1_MEASURED:.4f}")
 print("="*60)
 
 # ── 2. BUILD LINDBLAD COMPONENTS ─────────────────────────────────────────────
-# qt.destroy(2) is the lowering operator on a 2-level system. Equivalent to
-# sigma_minus = (sigma_x - i*sigma_y) / 2. Generalizes naturally to multi-level
-# Hilbert spaces (transmon_drag.py uses qt.destroy(3) for the |2> state).
 sigma_minus = qt.destroy(2)
 H_free      = qt.qzero(2)         # zero Hamiltonian: no drive, free evolution
 psi0        = qt.basis(2, 1)      # initial state |1>, matching the experiment
@@ -97,7 +62,6 @@ print(f"Self-consistency: {abs(T1_recovered - T1_MEASURED) / T1_MEASURED * 100:.
 print("(Should be << 1% if the Lindblad solver and curve fitter agree.)")
 
 # ── 5. COMPARE SIMULATION TO REAL DATA ───────────────────────────────────────
-# Interpolate each simulation onto the real delay grid, compute residuals
 sim_meas_at_data = interp1d(times, p1_sim_measured)(df["delay_us"])
 sim_pub_at_data  = interp1d(times, p1_sim_published)(df["delay_us"])
 
