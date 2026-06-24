@@ -1,43 +1,4 @@
-# -*- coding: utf-8 -*-
 """
-ms_gate.py
-Molmer-Sorensen two-qubit gate on two trapped ions sharing one motional mode,
-simulated in QuTiP. This is the trapped-ion counterpart to transmon_drag.py:
-where that script handles single-qubit gate control on a superconducting
-transmon, this one handles the entangling gate that IonQ and Quantinuum
-hardware actually run.
-
-The physics:
-    Two ion qubits couple to a single shared motional mode (a harmonic
-    oscillator, truncated to N_FOCK Fock states). A bichromatic laser field,
-    detuned by delta from the first motional sidebands, drives a
-    state-dependent force. In the Lamb-Dicke regime and after the RWA the
-    interaction-picture Hamiltonian is
-
-        H(t) = (eta*Omega/2) (sx_1 + sx_2) (a e^{+i delta t} + a^dag e^{-i delta t})
-
-    where eta is the Lamb-Dicke parameter and Omega the carrier Rabi rate.
-    The force pushes the motional state around a loop in phase space. After
-    one full loop the loop closes (motion disentangles from the qubits) and a
-    geometric phase proportional to (sx_1 + sx_2)^2 is left behind, which is
-    the sigma_x (x) sigma_x entangling interaction.
-
-    Closed-loop timing: the loop closes at tau_g = 2*pi/delta.
-    Maximal entanglement (a Bell state from |00>) needs geometric phase
-    chi = pi/8 on the sx*sx term, which gives the analytic calibration
-        Omega = delta / (2 eta).
-    The script confirms this by scanning Omega numerically and locking in the
-    value that maximizes Bell-state fidelity, mirroring the numerical
-    beta-sweep used to fix the DRAG coefficient in transmon_drag.py.
-
-    Ideal output state from |00>|n=0>:
-        U|00> = (|00> - i|11>)/sqrt(2)   (motion returned to ground)
-
-    Open-system channels:
-        motional heating  c = sqrt(ndot) a^dag      (ndot quanta/s)
-        qubit dephasing   c = sqrt(gamma_phi/2) sz  (per ion)
-
-The point of this script:
     (a) Calibrate the gate and report the Bell-state fidelity at the closed-loop
         point, confirming Omega = delta/(2 eta) numerically.
     (b) Sweep the detuning delta around the calibrated point to show how a
@@ -45,10 +6,6 @@ The point of this script:
         close) degrades fidelity.
     (c) Sweep the motional heating rate ndot to show the fidelity ceiling set
         by trap heating, the dominant hardware-side error for this gate.
-
-Outputs:
-    outputs/plots/ms_gate_calibration.png       (fidelity vs Omega)
-    outputs/plots/ms_gate_error_budget.png      (fidelity vs detuning, vs heating)
 """
 
 from pathlib import Path
@@ -76,10 +33,8 @@ sz2 = qt.tensor(qt.qeye(2), qt.sigmaz(), qt.qeye(N_FOCK))
 a   = qt.tensor(qt.qeye(2), qt.qeye(2), qt.destroy(N_FOCK))
 Sx  = sx1 + sx2
 
-# motion starts in the ground state (perfect sideband cooling), qubits in |00>
 psi0 = qt.tensor(qt.basis(2, 0), qt.basis(2, 0), qt.basis(N_FOCK, 0))
 
-# ideal Bell target on the qubit subspace
 bell = (qt.tensor(qt.basis(2, 0), qt.basis(2, 0)) +
         -1j*qt.tensor(qt.basis(2, 1), qt.basis(2, 1))).unit()
 
@@ -133,7 +88,6 @@ print("-"*64)
 for nd, f in zip(ndot_scan, fid_heat):
     print(f"  heating ndot = {nd:8.0f} /s   ->  Bell fidelity = {f:.5f}   (1-F = {1-f:.2e})")
 
-# add a representative qubit-dephasing point for context
 Tphi = 1.0e-3                      # 1 ms motional/qubit dephasing time
 c_deph = [np.sqrt(1.0/(2*Tphi))*sz1, np.sqrt(1.0/(2*Tphi))*sz2]
 F_deph = bell_fidelity(run_gate(Omega_opt, delta, c_ops=c_deph))
