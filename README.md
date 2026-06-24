@@ -1,5 +1,5 @@
-# QuTiP Superconducting Simulation: Coherence, Driven Dynamics, and DRAG Leakage Suppression
-
+ # QuTiP Qubit-Gate Simulations: Superconducting Coherence & DRAG, and Trapped-Ion Mølmer–Sørensen Gate
+ 
 **Author:** Paulino "Paul" Gin · BS Applied Physics + BA Mathematics, Boston College (Class of 2027)
 **Stack:** QuTiP 5 · Python (NumPy / SciPy / Matplotlib / Pandas)
 **Repo:** [github.com/paulggin/qutip-superconducting-simulation](https://github.com/paulggin/qutip-superconducting-simulation)
